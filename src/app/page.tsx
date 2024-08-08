@@ -6,6 +6,7 @@ import { Button } from "./_components/ui/button"
 import { Card, CardContent } from "./_components/ui/card"
 import Header from "./_components/ui/header"
 import { Input } from "./_components/ui/input"
+import { quickSearchOptions } from "./_constants/search"
 import { db } from "./_lib/prisma"
 
 export default async function Home() {
