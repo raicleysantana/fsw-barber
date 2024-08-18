@@ -1,4 +1,5 @@
 import { SearchIcon } from "lucide-react"
+import { getServerSession } from "next-auth"
 import Image from "next/image"
 import BarbershopItem from "./_components/barbershop-item"
 import BookingItem from "./_components/booking-item"
@@ -8,22 +9,50 @@ import { Card, CardContent } from "./_components/ui/card"
 import { Input } from "./_components/ui/input"
 import { quickSearchOptions } from "./_constants/search"
 import { db } from "./_lib/prisma"
+import { authOption } from "./api/auth/[...nextauth]/route"
 
 export default async function Home() {
-  const barbershops = await db.barbershop.findMany()
+  const session = await getServerSession(authOption)
 
-  const popularBarberShops = await db.barbershop.findMany({
+  const _barbershops = await db.barbershop.findMany()
+
+  const _popularBarberShops = await db.barbershop.findMany({
     orderBy: {
       name: "desc",
     },
   })
+
+  const _bookings = session?.user
+    ? await db.booking.findMany({
+        where: {
+          userId: (session.user as any).id,
+          date: {
+            gte: new Date(),
+          },
+        },
+        include: {
+          service: true,
+          barbershop: true,
+        },
+      })
+    : Promise.resolve([])
+
+  const [popularBarberShops, barbershops, bookings] = await Promise.all([
+    _popularBarberShops,
+    _barbershops,
+    _bookings,
+  ])
 
   return (
     <div>
       <Header />
 
       <div className="p-5">
-        <h2 className="text-xl font-bold">Olá, Raicley</h2>
+        <h2 className="text-xl font-bold">
+          {session?.user
+            ? `Olá, ${session.user.name?.split(" ")[0]}!`
+            : `Olá! Vamos agendar um corte hoje?`}
+        </h2>
 
         <p>Segunda-feira, 05 de agosto</p>
 
@@ -33,6 +62,21 @@ export default async function Home() {
           <Button>
             <SearchIcon />
           </Button>
+        </div>
+
+        <div className="mt-6">
+          {bookings.length > 0 && (
+            <>
+              <h2 className="mb-3 text-xs font-bold uppercase text-gray-400">
+                Agendamentos
+              </h2>
+              <div className="flex gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+                {bookings.map((booking) => (
+                  <BookingItem key={booking.id} booking={booking} />
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="mt-6 flex gap-3 overflow-x-hidden [&::-webkit-scrollbar]:hidden">
@@ -58,7 +102,7 @@ export default async function Home() {
           />
         </div>
 
-        <BookingItem />
+        {/* <BookingItem /> */}
 
         <h2 className="mb-3 mt-6 text-xs font-bold uppercase text-gray-400">
           Recomendados
