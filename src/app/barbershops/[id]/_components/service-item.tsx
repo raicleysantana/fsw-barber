@@ -90,7 +90,7 @@ const ServiceItem = ({
 
       return false
     })
-  }, [])
+  }, [date])
 
   const handleBookingSubmit = async () => {
     setSubmitIsLoading(true)
